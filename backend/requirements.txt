@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+sqlalchemy
+alembic
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]
+redis
+aioredis
+pydantic
+google-cloud-bigquery
+google-cloud-aiplatform
+google-auth
+httpx
+pandas
+python-multipart
