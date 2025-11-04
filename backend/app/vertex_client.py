@@ -1,13 +1,17 @@
-from .config import settings
+from functools import lru_cache
+from typing import Any
+
 from google.cloud import aiplatform
 
+from .config import get_settings
 
-aiplatform.init(project=settings.GOOGLE_PROJECT, location=settings.VERTEX_LOCATION)
-
-
-MODEL = settings.VERTEX_MODEL
+settings = get_settings()
 
 
+@lru_cache
+def _get_generation_model() -> Any:
+    aiplatform.init(project=settings.GCP_PROJECT, location=settings.VERTEX_REGION)
+    return aiplatform.TextGenerationModel.from_pretrained(settings.VERTEX_MODEL)
 
 
 def generate_sql(natural_query: str, table_schema: str) -> str:
@@ -24,16 +28,14 @@ def generate_sql(natural_query: str, table_schema: str) -> str:
 
     Return only the SQL statement, nothing else.
     """
-    model = aiplatform.TextGenerationModel.from_pretrained(MODEL)
+    model = _get_generation_model()
     resp = model.predict(prompt, max_output_tokens=512, temperature=0.0)
     return resp.text.strip()
-
-
 
 
 def summarize_dataframe(df) -> str:
     sample = df.head(20).to_csv(index=False)
     prompt = f"Summarize the following query results in 2-3 sentences:\n\n{sample}"
-    model = aiplatform.TextGenerationModel.from_pretrained(MODEL)
+    model = _get_generation_model()
     resp = model.predict(prompt, max_output_tokens=256, temperature=0.2)
     return resp.text.strip()

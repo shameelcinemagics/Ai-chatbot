@@ -1,28 +1,47 @@
-import os
-from pydantic import BaseSettings
+from functools import lru_cache
 from typing import Optional
 
-class Settings(BaseSettings):
-    BACKEND_HOST: str = "0.0.0.0"
-    BACKEND_PORT: int = 8000
+from pydantic import BaseSettings, validator
 
-    DATABASE_URL: str = str
+
+class Settings(BaseSettings):
+    ENV: str = "development"
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    CORS_ORIGINS: Optional[str] = None
+
+    DATABASE_URL: str
     REDIS_URL: str = "redis://redis:6379/0"
 
-    JWT_SECRET : str
-    ACCESS_TOKEN_EXPIRES : int = 900
-    REFRESH_TOKEN_EXPIRES : int = 1209600
+    JWT_ACCESS_SECRET: str
+    JWT_REFRESH_SECRET: str
+    JWT_ISSUER: str
+    JWT_AUDIENCE: str
+    JWT_ACCESS_TTL_MIN: int = 15
+    JWT_REFRESH_TTL_DAYS: int = 30
 
-    ADMIN_USERNAME : str
-    ADMIN_PASSWORD : str
+    COOKIE_SECURE: bool = False
+    COOKIE_DOMAIN: Optional[str] = None
 
-    GOOGLE_PROJECT_ID : str
-    BQ_DATASET_DEFAULT : str
-    BQ_TABLE_DEFAULT : str
-    VERTEX_MODEL : str
-    VERTEX_LOCATION : str
+    GCP_PROJECT: str
+    BQ_DATASET: str
+    BQ_DEFAULT_TABLE: str
+    VERTEX_MODEL: str
+    VERTEX_REGION: str
+
+    ADMIN_EMAIL: str
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
-settings = Settings()
+    @validator("COOKIE_DOMAIN")
+    def _empty_domain_as_none(cls, value: Optional[str]) -> Optional[str]:
+        if value is not None and value.strip() == "":
+            return None
+        return value
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
